@@ -1,65 +1,157 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const Home = () => {
-  const [tareas, setTareas] = useState([]);   // va a almacenar la tareas
-  const [nuevaTarea, setNuevaTarea] = useState(""); // va almacenar lo que ponga en las nuevas tareas
+const TodoList = () => {
+  const [addTask, setAddTask] = useState("");
+  const [todoList, setTodoList] = useState([]);
 
-  const listaNuevaTarea = (event) => {
-    setNuevaTarea(event.target.value); // va actulizar estado de la nueva tarea
-	console.log(listaNuevaTarea)       // event.target.value obtiene el valor actual del campo de entrada y lo guarda en nuevaTarea.
+
+  async function crearUsuario() {
+    try {
+      let response = await fetch("https://playground.4geeks.com/apis/fake/todos/user/juanocoronel", {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify([]),
+      });
+      let data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.log(error); // Si hay un error, muestra el mensaje de error
+    }
+  } 
+
+
+  useEffect(() => {
+    crearUsuario(); //  función para crear el usuario al cargar el componente
+    fetchTasks(); //  función para obtener las tareas al cargar el componente
+  }, []);
+
+  
+  // funcion para obtener las tareas desde una API externa
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch("https://playground.4geeks.com/apis/fake/todos/user/juanocoronel");
+      const data = await response.json(); // respuesta a formato JSON
+      setTodoList(data); 
+    } catch (error) {
+      console.log(error); 
+    }
+  };
+  
+  // obtener las tareas al cargar el componente
+  useEffect(() => {
+    fetchTasks(); // llamar a la función fetchTasks para obtener las tareas
+  }, []);
+
+  // Manejar cambios en el input de la nueva tarea
+  const handleInput = (event) => {
+    setAddTask(event.target.value); // Actualizar el estado de la tarea
   };
 
-  const agregarTarea = () => {
-    if (nuevaTarea.trim() !== "") {
-      setTareas([...tareas, nuevaTarea]);  // verifica que nueva tarea no este sin nada
-      setNuevaTarea("");                  // se agrega a la lista de tareas
-	  console.log(agregarTarea)
+  // Agregar una tarea y sincronizar con la API
+  const addTaskAndSync = async (event) => {
+    if (event.key === "Enter" && addTask.trim() !== "") {
+      const newTask = {
+        label: addTask,
+        done: false,
+      };
+      const updatedTodoList = [...todoList, newTask];
+      setTodoList(updatedTodoList);
+      setAddTask("");
+
+      try {
+        // actualizar la lista de tareas en la API usando una solicitud PUT
+        await fetch("https://playground.4geeks.com/apis/fake/todos/user/juanocoronel", {
+          method: 'PUT',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedTodoList),
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
 
-  const eliminarTarea = (indice) => {
-    const tareasActualizadas = tareas.filter((_, i) => i !== indice);
-    setTareas(tareasActualizadas);       // va a servir para cuando quieramos eliminar la tarea con un click
-	console.log(eliminarTarea)
+  // Eliminar una tarea y sincronizar con la API
+  const removeTaskAndSync = async (index) => {
+    const updatedTodoList = todoList.filter((_, i) => index !== i);
+    setTodoList(updatedTodoList);
+
+    try {
+      await fetch("https://playground.4geeks.com/apis/fake/todos/user/juanocoronel", {
+        method: 'PUT',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedTodoList),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // eliminar  las tareas y sincronizar con la API
+  const deleteAllTasksAndSync = async () => {
+    try {
+      //solicitud DELETE para eliminar todas las tareas en la API
+      await fetch("https://playground.4geeks.com/apis/fake/todos/user/juanocoronel", {
+        method: 'DELETE',
+        headers: { "Content-Type": "application/json" },
+      });
+      setTodoList([]); 
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
     <div className="container">
-    <div className="text-center w-50 mx-auto">
-      <h1 className="h1 text-center text-white p-4"> <strong><svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-card-checklist" viewBox="0 0 16 16">
+      <div className="text-center w-50 mx-auto">
+        <h1 className="h1 text-center text-white p-4"> <strong><svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" className="bi bi-card-checklist" viewBox="0 0 16 16">
   <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
   <path d="M7 5.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0zM7 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
 </svg> LISTA DE TAREAS AGOSTO</strong></h1>
-	   <input
-        type="text"
-        value={nuevaTarea}
-        onChange={listaNuevaTarea}
-        onKeyDown={(event) => event.key === "Enter" && agregarTarea()}  //  cuando se presiona una tecla en el campo. La tecla Enter, se llama a la función agregarTarea.
-        placeholder="Agregar una nueva tarea a la lista"
-        className="form-control"
-      />
-      <ul className="list-group">
-        {tareas.length === 0 ? (
-         
-<div className="center-div border border-danger bg-danger text-light w-50 m-3 p-2 mb-4"> ¡Ninguna tarea agregada para este mes!</div>
-        ) : (
-          tareas.map((tarea, indice) => (
-            <li className="list-group-item list-group-item-secondary pt-2" key={indice}> <strong> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
-          </svg></strong> 
-              { tarea}
-              <button className="btn btn-danger float-end" onClick={() => eliminarTarea(indice)}> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash3-fill" viewBox="0 0 16 16">
-  <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-</svg></button>
-            </li>
-          ))
-        )}
-      </ul>
-     
-    </div>
-   
+       
+       
+        <input
+          type="text"
+          className="form-control"
+          value={addTask}
+          onChange={handleInput}
+          onKeyDown={addTaskAndSync}
+          placeholder="Agregar una nueva tarea a la lista de este mes"
+        />
+        
+
+        <ul className="list-group">
+        {todoList.map(({ label }, index) => (
+  <li className="list-group-item list-group-item-secondary pt-2" key={index}>
+    {label}
+    <button
+      className={`btn btn-danger float-end mx-auto ${todoList.length === 0 && "disabled"}`}
+      id="deleteAll"
+      onClick={deleteAllTasksAndSync}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash-fill" viewBox="0 0 16 16">
+        <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+      </svg>
+    </button>
+  </li>
+))}
+       
+          <li className="list-group-item">
+            {todoList.length === 0 ? (
+              <div className="center-div border border-danger bg-danger text-light w-50 m-3 p-2 mb-4">
+                ¡Ninguna tarea agregada para este mes!
+              </div>
+            ) : (
+              `${todoList.length} items left`
+            )}
+          </li>
+        </ul>
+      </div>
+      
     </div>
   );
 };
 
-export default Home;
+export default TodoList;
